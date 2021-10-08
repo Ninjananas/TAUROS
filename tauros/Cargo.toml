@@ -1,0 +1,19 @@
+[package]
+name = "tauros"
+version = "0.1.0"
+authors = ["Ninjananas <arsene.volte@tuta.io>"]
+edition = "2018"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[lib]
+crate-type = ["staticlib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#rust-libcore = ""

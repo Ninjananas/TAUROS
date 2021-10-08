@@ -1,0 +1,11 @@
+* Simple Rust Operating System
+
+TAUROS is a very frature-limited kernel written in Rust.
+It is a personal project that helps me learn more about system programming and Rust.
+
+** Requirements
+
+*** Compile the kernel
+- Rust nightly
+- rust-src
+- gcc
