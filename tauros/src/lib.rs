@@ -2,7 +2,7 @@
 #![feature(asm)]
 #![feature(llvm_asm)]
 #![feature(abi_x86_interrupt)]
-#![feature(const_fn)]
+// #![feature(const_fn)]
 // #![feature(custom_test_frameworks)]
 // #![test_runner(test_runner)]
 // #![reexport_test_harness_main = "test_main"]
