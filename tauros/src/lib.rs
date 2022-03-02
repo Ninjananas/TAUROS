@@ -2,11 +2,6 @@
 #![feature(asm)]
 #![feature(llvm_asm)]
 #![feature(abi_x86_interrupt)]
-// #![feature(const_fn)]
-// #![feature(custom_test_frameworks)]
-// #![test_runner(test_runner)]
-// #![reexport_test_harness_main = "test_main"]
-// #![feature(lang_items)]
 
 use core::panic::PanicInfo;
 /// Function called on panic
@@ -15,19 +10,6 @@ fn panic(info: &PanicInfo) -> ! {
     println!("{}{}", vga_buffer::Color::LightRed as u8 as char, info);
     loop {}
 }
-
-// #[cfg(test)]
-// fn test_runner(tests: & [&dyn Fn()]) {
-//     println!("Running {} tests", tests.len());
-//     for test in tests {
-//         test();
-//     }
-// }
-
-// #[lang = "start"]
-// fn tmain(argc: usize, argv: i64) -> usize {
-//     0
-// }
 
 // Beginning of kernel
 
@@ -51,7 +33,10 @@ pub extern "C" fn kernel_main() -> ! {
     // Get Multiboot2 Information
     let mb2_addr = unsafe{DIRECT_MAP_OFFSET as usize + mb2_info_pa as usize};
 
-    println!("\nmemory size: {} MB", multiboot::get_memory_size(mb2_addr) / 0x100000);
+
+    let boot_info = multiboot::load(mb2_addr);
+    println!("\nmemory size: {} MB", boot_info.total_memory_size() / 0x100000);
+
 
     // TODO : Create direct map at random location
 
