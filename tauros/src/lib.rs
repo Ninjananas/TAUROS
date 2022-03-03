@@ -41,7 +41,6 @@ pub extern "C" fn kernel_main() -> ! {
 
     interrupt::init_idt();
 
-    unsafe{ asm!("int $3", options(att_syntax)); }
 
     // TODO : Create direct map at random location
 
