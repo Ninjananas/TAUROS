@@ -7,6 +7,7 @@ test-iso := build/test-tauros-$(arch).iso
 tauros_dir := tauros
 target ?= $(arch)-tauros
 rust_os := $(tauros_dir)/target/$(target)/debug/libtauros.a
+rust_flags := -A dead_code
 
 linker_script := src/arch/$(arch)/linker.ld
 grub_cfg := src/arch/$(arch)/grub.cfg
@@ -61,4 +62,4 @@ build/arch/$(arch)/%.o: src/arch/$(arch)/%.S
 $(rust_os): kernel
 
 kernel:
-	@cd $(tauros_dir); cargo build -Z no-index-update
+	@cd $(tauros_dir);RUSTFLAGS="$(RUSTFLAGS) $(rust_flags)" cargo build -Z no-index-update
