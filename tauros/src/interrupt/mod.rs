@@ -1,10 +1,19 @@
 use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
 use core::arch::asm;
+use core::mem::size_of;
+
+use lazy_static::lazy_static;
+
+#[repr(C, packed)]
+struct InterruptDescriptorTableDescriptor {
+    size: u16,
+    offset: u64,
+}
 
 #[repr(C)]
 #[repr(align(16))]
-pub struct IDT {
+pub struct InterruptDescriptorTable {
     divide_by_zero: Entry<Gate>, // Vector 0
     debug: Entry<Gate>, // Vector 1
     non_maskable_interrupt: Entry<Gate>, // Vector 2
@@ -33,9 +42,9 @@ pub struct IDT {
     interrupts: [Entry<Gate>; 256 - 32], // general interrupts
 }
 
-impl IDT {
-    pub /*const*/ fn new() -> IDT {
-        IDT {
+impl InterruptDescriptorTable {
+    pub /*const*/ fn new() -> InterruptDescriptorTable {
+        InterruptDescriptorTable {
             divide_by_zero: Entry::missing(),
             debug: Entry::missing(),
             non_maskable_interrupt: Entry::missing(),
@@ -63,9 +72,18 @@ impl IDT {
             interrupts: [Entry::missing(); 256 - 32],
         }
     }
+
+    // static lifetime, InterruptDescriptorTable will be used during the whole OS execution
+    pub fn load(&'static self) {
+        let idtr = InterruptDescriptorTableDescriptor {
+            offset: self as *const _ as u64,
+            size: (size_of::<Self>() - 1) as u16,
+        };
+        unsafe{ asm!("lidt ({0:r})", in(reg) &idtr as *const _ as u64 , options(att_syntax)) };
+    }
 }
 
-impl Index<usize> for IDT {
+impl Index<usize> for InterruptDescriptorTable {
     type Output = Entry<Gate>;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -84,15 +102,15 @@ impl Index<usize> for IDT {
             19 => &self.simd_floating_point_exception,
             20 => &self.virtualization_exception,
             i @ 32..=255 => &self.interrupts[i - 32],
-            i @ 15 | i @ 21..=29 | i @ 31 => panic!("IDT entry {} is reserved", i),
-            i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => panic!("IDT entry {} has an error code and can't be accessed through an index", i),
-            i => panic!("IDT entry {} does not exist", i),
+            i @ 15 | i @ 21..=29 | i @ 31 => panic!("InterruptDescriptorTable entry {} is reserved", i),
+            i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => panic!("InterruptDescriptorTable entry {} has an error code and can't be accessed through an index", i),
+            i => panic!("InterruptDescriptorTable entry {} does not exist", i),
         }
     }
 }
 
 
-impl IndexMut<usize> for IDT {
+impl IndexMut<usize> for InterruptDescriptorTable {
 
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         match index {
@@ -110,9 +128,9 @@ impl IndexMut<usize> for IDT {
             19 => &mut self.simd_floating_point_exception,
             20 => &mut self.virtualization_exception,
             i @ 32..=255 => &mut self.interrupts[i - 32],
-            i @ 15 | i @ 21..=29 | i @ 31 => panic!("IDT entry {} is reserved", i),
-            i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => panic!("IDT entry {} has an error code and can't be accessed through an index", i),
-            i => panic!("IDT entry {} does not exist", i),
+            i @ 15 | i @ 21..=29 | i @ 31 => panic!("InterruptDescriptorTable entry {} is reserved", i),
+            i @ 8 | i @ 10..=14 | i @ 17 | i @ 30 => panic!("InterruptDescriptorTable entry {} has an error code and can't be accessed through an index", i),
+            i => panic!("InterruptDescriptorTable entry {} does not exist", i),
         }
     }
 }
@@ -121,8 +139,13 @@ impl IndexMut<usize> for IDT {
 pub type Gate = extern "x86-interrupt" fn(&mut InterruptFrame);
 pub type GateWithErrorCode = extern "x86-interrupt" fn(&mut InterruptFrame, error_code: u64);
 
+#[repr(C)]
 pub struct InterruptFrame {
-
+    pub instruction_pointer: u64,
+    pub code_segment: u64,
+    pub cpu_flags: u64,
+    pub stack_pointer: u64,
+    pub stack_segment: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -156,7 +179,7 @@ impl<T> Entry<T> {
         self.pointer_mid = (addr >> 16) as u16;
         self.pointer_high = (addr >> 32) as u32;
 
-        unsafe { asm!("movw %cs, {0:x}", out(reg) self.gdt_selector) };
+        unsafe { asm!("movw %cs, {0:x}", out(reg) self.gdt_selector, options(att_syntax)) };
 
         self.options.set_present(true);
 
@@ -216,4 +239,21 @@ impl Options {
         set_bits!(self.0, 0, 3, index);
         self
     }
+}
+
+lazy_static! {
+    static ref IDT: InterruptDescriptorTable = {
+        let mut idt = InterruptDescriptorTable::new();
+        idt.breakpoint.set_gate_fn(breakpoint_gate);
+        idt
+    };
+}
+
+pub fn init_idt() {
+    IDT.load();
+}
+
+
+extern "x86-interrupt" fn breakpoint_gate(stack_frame: &mut InterruptFrame) {
+    println!("EXCEPTION: BREAKPOINT\n");
 }
