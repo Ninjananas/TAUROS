@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
+use core::arch::asm;
 
 #[repr(C)]
 #[repr(align(16))]
@@ -155,7 +156,7 @@ impl<T> Entry<T> {
         self.pointer_mid = (addr >> 16) as u16;
         self.pointer_high = (addr >> 32) as u32;
 
-        unsafe { llvm_asm!("movw %cs, $0" : "=r"(self.gdt_selector)) };
+        unsafe { asm!("movw %cs, {0:x}", out(reg) self.gdt_selector) };
 
         self.options.set_present(true);
 

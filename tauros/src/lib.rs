@@ -1,6 +1,5 @@
 #![no_std]
 #![feature(asm)]
-#![feature(llvm_asm)]
 #![feature(abi_x86_interrupt)]
 
 use core::panic::PanicInfo;
