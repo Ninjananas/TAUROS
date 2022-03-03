@@ -33,7 +33,7 @@ impl BootInformation {
         self.get_header().total_size as usize
     }
 
-    pub fn get_header(&self) -> &MultibootHeader {
+    fn get_header(&self) -> &MultibootHeader {
         unsafe { &*self.header }
     }
 
