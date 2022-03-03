@@ -2,6 +2,9 @@
 #![feature(asm)]
 #![feature(abi_x86_interrupt)]
 
+#[macro_use]
+extern crate lazy_static;
+
 use core::panic::PanicInfo;
 /// Function called on panic
 #[panic_handler]
@@ -32,10 +35,13 @@ pub extern "C" fn kernel_main() -> ! {
     // Get Multiboot2 Information
     let mb2_addr = unsafe{DIRECT_MAP_OFFSET as usize + mb2_info_pa as usize};
 
-
     let boot_info = multiboot::load(mb2_addr);
     println!("\nmemory size: {} MB", boot_info.total_memory_size() / 0x100000);
 
+
+    interrupt::init_idt();
+
+    unsafe{ asm!("int $3", options(att_syntax)); }
 
     // TODO : Create direct map at random location
 
