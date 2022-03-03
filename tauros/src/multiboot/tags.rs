@@ -27,7 +27,7 @@ pub enum TagType {
 }
 
 #[derive(Clone, Copy)]
-#[repr(C, packed)]
+#[repr(C)]
 pub struct Tag {
     pub typ: TagType,
     pub size: u32,
