@@ -2,6 +2,7 @@ use core::marker::PhantomData;
 use core::ops::{Index, IndexMut};
 use core::arch::asm;
 use core::mem::size_of;
+use core::fmt;
 
 use lazy_static::lazy_static;
 
@@ -148,6 +149,27 @@ pub struct InterruptFrame {
     pub stack_segment: u64,
 }
 
+
+impl fmt::Debug for InterruptFrame {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        struct Hex(u64);
+        impl fmt::Debug for Hex {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "{:#x}", self.0)
+            }
+        }
+
+        f.debug_struct("InterruptFrame")
+            .field("instruction_pointer", &Hex(self.instruction_pointer))
+            .field("code_segment", &self.code_segment)
+            .field("cpu_flags", &Hex(self.cpu_flags))
+            .field("stack_pointer", &Hex(self.stack_pointer))
+            .field("stack_segment", &self.stack_segment)
+            .finish()
+    }
+}
+
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(C)]
 pub struct Entry<T> {
@@ -255,5 +277,5 @@ pub fn init_idt() {
 
 
 extern "x86-interrupt" fn breakpoint_gate(stack_frame: &mut InterruptFrame) {
-    println!("EXCEPTION: BREAKPOINT\n");
+    println!("EXCEPTION: BREAKPOINT\n{:?}", stack_frame);
 }
