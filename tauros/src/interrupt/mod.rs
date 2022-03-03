@@ -5,32 +5,32 @@ use core::arch::asm;
 #[repr(C)]
 #[repr(align(16))]
 pub struct IDT {
-    divide_by_zero: Entry<HandlerFunc>, // Vector 0
-    debug: Entry<HandlerFunc>, // Vector 1
-    non_maskable_interrupt: Entry<HandlerFunc>, // Vector 2
-    breakpoint: Entry<HandlerFunc>, // Vector 3
-    overflow: Entry<HandlerFunc>, // Vector 4
-    bound_range_exceeded: Entry<HandlerFunc>, // Vector 5
-    invalid_opcode: Entry<HandlerFunc>, // Vector 6
-    device_not_available: Entry<HandlerFunc>, // Vector 7
-    double_fault: Entry<HandlerFuncWithErrorCode>, // Vector 8
-    coprocessor_segment_overrun: Entry<HandlerFunc>, // Vector 9
-    invalid_tss: Entry<HandlerFuncWithErrorCode>, // Vector 10
-    segment_not_present: Entry<HandlerFuncWithErrorCode>, // Vector 11
-    stack_segment_fault: Entry<HandlerFuncWithErrorCode>, // Vector 12
-    general_protection_fault: Entry<HandlerFuncWithErrorCode>, // Vector 13
-    page_fault: Entry<HandlerFuncWithErrorCode>, // Vector 14
-    reserved_15: Entry<HandlerFunc>, // Vector 15
-    x87_floating_point_exception: Entry<HandlerFunc>, // Vector 16
-    alignment_check: Entry<HandlerFuncWithErrorCode>, // Vector 17
-    machine_check: Entry<HandlerFunc>, // Vector 18
-    simd_floating_point_exception: Entry<HandlerFunc>, // Vector 19
-    virtualization_exception: Entry<HandlerFunc>, // Vector 20
-    reserved_21_30: [Entry<HandlerFunc>; 9], // Vectors 21 to 29
-    security_exception: Entry<HandlerFuncWithErrorCode>, // Vector 30
-    reserved_31: Entry<HandlerFunc>, // Vector 31
+    divide_by_zero: Entry<Gate>, // Vector 0
+    debug: Entry<Gate>, // Vector 1
+    non_maskable_interrupt: Entry<Gate>, // Vector 2
+    breakpoint: Entry<Gate>, // Vector 3
+    overflow: Entry<Gate>, // Vector 4
+    bound_range_exceeded: Entry<Gate>, // Vector 5
+    invalid_opcode: Entry<Gate>, // Vector 6
+    device_not_available: Entry<Gate>, // Vector 7
+    double_fault: Entry<GateWithErrorCode>, // Vector 8
+    coprocessor_segment_overrun: Entry<Gate>, // Vector 9
+    invalid_tss: Entry<GateWithErrorCode>, // Vector 10
+    segment_not_present: Entry<GateWithErrorCode>, // Vector 11
+    stack_segment_fault: Entry<GateWithErrorCode>, // Vector 12
+    general_protection_fault: Entry<GateWithErrorCode>, // Vector 13
+    page_fault: Entry<GateWithErrorCode>, // Vector 14
+    reserved_15: Entry<Gate>, // Vector 15
+    x87_floating_point_exception: Entry<Gate>, // Vector 16
+    alignment_check: Entry<GateWithErrorCode>, // Vector 17
+    machine_check: Entry<Gate>, // Vector 18
+    simd_floating_point_exception: Entry<Gate>, // Vector 19
+    virtualization_exception: Entry<Gate>, // Vector 20
+    reserved_21_30: [Entry<Gate>; 9], // Vectors 21 to 29
+    security_exception: Entry<GateWithErrorCode>, // Vector 30
+    reserved_31: Entry<Gate>, // Vector 31
 
-    interrupts: [Entry<HandlerFunc>; 256 - 32], // general interrupts
+    interrupts: [Entry<Gate>; 256 - 32], // general interrupts
 }
 
 impl IDT {
@@ -66,7 +66,7 @@ impl IDT {
 }
 
 impl Index<usize> for IDT {
-    type Output = Entry<HandlerFunc>;
+    type Output = Entry<Gate>;
 
     fn index(&self, index: usize) -> &Self::Output {
         match index {
@@ -118,8 +118,8 @@ impl IndexMut<usize> for IDT {
 }
 
 
-pub type HandlerFunc = extern "x86-interrupt" fn(&mut InterruptFrame);
-pub type HandlerFuncWithErrorCode = extern "x86-interrupt" fn(&mut InterruptFrame, error_code: u64);
+pub type Gate = extern "x86-interrupt" fn(&mut InterruptFrame);
+pub type GateWithErrorCode = extern "x86-interrupt" fn(&mut InterruptFrame, error_code: u64);
 
 pub struct InterruptFrame {
 
@@ -151,7 +151,7 @@ impl<T> Entry<T> {
     }
 
     #[cfg(target_arch = "x86_64")]
-    fn set_handler_addr(&mut self, addr: u64) -> &mut Self {
+    fn set_gate_addr(&mut self, addr: u64) -> &mut Self {
         self.pointer_low = addr as u16;
         self.pointer_mid = (addr >> 16) as u16;
         self.pointer_high = (addr >> 32) as u32;
@@ -164,15 +164,15 @@ impl<T> Entry<T> {
     }
 }
 
-impl Entry<HandlerFunc> {
-    pub fn set_handler_fn(&mut self, handler: HandlerFunc) -> &mut Self {
-        self.set_handler_addr(handler as u64)
+impl Entry<Gate> {
+    pub fn set_gate_fn(&mut self, gate: Gate) -> &mut Self {
+        self.set_gate_addr(gate as u64)
     }
 }
 
-impl Entry<HandlerFuncWithErrorCode> {
-    pub fn set_handler_fn(&mut self, handler: HandlerFuncWithErrorCode) -> &mut Self {
-        self.set_handler_addr(handler as u64)
+impl Entry<GateWithErrorCode> {
+    pub fn set_gate_fn(&mut self, gate: GateWithErrorCode) -> &mut Self {
+        self.set_gate_addr(gate as u64)
     }
 }
 
