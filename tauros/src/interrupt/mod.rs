@@ -4,6 +4,9 @@ use core::arch::asm;
 use core::mem::size_of;
 use core::fmt;
 
+mod gates;
+use gates::*;
+
 use lazy_static::lazy_static;
 
 #[repr(C, packed)]
@@ -267,15 +270,11 @@ lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_gate_fn(breakpoint_gate);
+        idt.double_fault.set_gate_fn(double_fault_gate);
         idt
     };
 }
 
 pub fn init_idt() {
     IDT.load();
-}
-
-
-extern "x86-interrupt" fn breakpoint_gate(stack_frame: &mut InterruptFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:?}", stack_frame);
 }
