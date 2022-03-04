@@ -32,7 +32,7 @@ _start:
 	call enable_paging
 
 	/* load 64-bit GDT */
-	movl $TO_PA(gdt64pointer), %eax
+	movl $TO_PA(gdt_pointer), %eax
 	lgdt (%eax)
 
 	/* load cs with gdt64code */
@@ -315,16 +315,16 @@ temporary_direct_map:
 
 .section .rodata
 .align 4096
-gdt64:
+gdt:
 	.quad 0			#zero entry
-gdt64code:
+gdt_code_kernel:
 	.quad ((1<<43) | (1<<44) | (1<<47) | (1<<53)) #code segment
-gdt64pointer:
-	.word gdt64pointer - gdt64 - 1
-	.quad TO_PA(gdt64)
+gdt_pointer:
+	.word gdt_pointer - gdt - 1
+	.quad TO_PA(gdt)
 farjump64:
 	.long TO_PA(long_mode_start)
-	.word gdt64code - gdt64
+	.word gdt_code_kernel - gdt
 
 
 .section .bss
