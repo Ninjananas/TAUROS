@@ -62,4 +62,4 @@ build/arch/$(arch)/%.o: src/arch/$(arch)/%.S
 $(rust_os): kernel
 
 kernel:
-	@cd $(tauros_dir);RUSTFLAGS="$(RUSTFLAGS) $(rust_flags)" cargo build -Z no-index-update
+	@cd $(tauros_dir);RUSTFLAGS="$(RUSTFLAGS) $(rust_flags)" cargo build #-Z no-index-update
